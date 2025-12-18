@@ -59,7 +59,7 @@ jobs:
           target: runtime-prod
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           tags: |
             registry.nimahosts.com/nimasystems-public/wordpress-max:${{ needs.set-version.outputs.version }}
 
@@ -166,7 +166,7 @@ jobs:
             ## Wordpress-MAX Release ${{ needs.build-wp.outputs.version }}
 
             **Build Date:** ${{ github.event.head_commit.timestamp }}
-            **Platform:** Docker (linux/amd64)
+            **Platforms:** Docker (linux/amd64, linux/arm64)
 
             ### Changes
             ${{ steps.changelog.outputs.content }}
