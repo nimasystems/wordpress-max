@@ -1,0 +1,181 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (e.g., 1.0.0)"
+        required: true
+      latest:
+        description: "Tag as latest?"
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  set-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract_version.outputs.version }}
+    steps:
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${{ inputs.version }}
+          fi
+          echo "Extracted version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+  build-wp:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ needs.set-version.outputs.version }}
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          registry: registry.nimahosts.com
+          username: ${{ secrets.REGISTRY_NIMAHOSTS_USERNAME }}
+          password: ${{ secrets.REGISTRY_NIMAHOSTS_PASSWORD }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: true
+          target: runtime-prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          tags: |
+            registry.nimahosts.com/nimasystems/wordpress-max:${{ needs.set-version.outputs.version }}
+
+      - name: Push latest tag (if selected)
+        if: inputs.latest == 'true'
+        run: |
+          docker tag registry.nimahosts.com/nimasystems/wordpress-max:${{ needs.set-version.outputs.version }} registry.nimahosts.com/nimasystems/wordpress-max:latest
+          docker push registry.nimahosts.com/nimasystems/wordpress-max:latest
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+  create-release:
+    needs: [ build-wp ]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        if: success()
+        id: changelog
+        run: |
+          # Get previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 v${{ needs.build-app.outputs.version }}^ 2>/dev/null || echo "")
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found, using all commits"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" v${{ needs.build-app.outputs.version }})
+          else
+            echo "Previous tag: $PREVIOUS_TAG"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" ${PREVIOUS_TAG}..v${{ needs.build-app.outputs.version }})
+          fi
+
+          # Save changelog to file for multiline output
+          echo "$CHANGELOG" > changelog.txt
+
+          # Output for step output
+          {
+            echo "content<<EOF"
+            cat changelog.txt
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+          # Also output for debugging
+          echo "Changelog:"
+          cat changelog.txt
+
+      - name: Create GitHub Release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: v${{ needs.build-app.outputs.version }}
+          name: Release ${{ needs.build-app.outputs.version }}
+          body: |
+            ## Wordpress-MAX Release ${{ needs.build-app.outputs.version }}
+
+            **Build Date:** ${{ github.event.head_commit.timestamp }}
+            **Platform:** Docker (linux/amd64)
+
+            ### Changes
+            ${{ steps.changelog.outputs.content }}
+
+            ### Docker Images
+            - **Web Application:** `registry.nimahosts.com/nimasystems/wordpress-max:${{ needs.build-app.outputs.version }}`
+
+            ### Deployment
+            This release has been automatically built and pushed to the Docker registry.
+
+            ---
+            *🤖 Auto-generated release from [GitHub Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+
+      - name: Send Slack Notification
+        if: ${{ env.ACT != 'true' && success() }}
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            channel: notifications
+            status: "${{ job.status }}"
+            text: "*✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.*\n
+            *Status:* ${{ job.status }}\n
+            *Version:* ${{ env.final_version }}\n
+            *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.\n
+                  *Status:* ${{ job.status }}\n
+                  *Version:* ${{ env.final_version }}\n
+                  *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+
+      - name: Send Slack Notification
+        if: ${{ env.ACT != 'true' && failure() }}
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            channel: notifications
+            status: "${{ job.status }}"
+            text: "*❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.*\n
+            *Status:* ${{ job.status }}\n
+            *Version which failed:* ${{ env.final_version }}\n
+            *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.\n
+                  *Status:* ${{ job.status }}\n
+                  *Version which failed:* ${{ env.final_version }}\n
+                  *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
