@@ -159,12 +159,21 @@ The Dockerfile uses a multi-stage build process:
 2. **runtime** stage: Sets up the runtime environment with all tools and configurations
 3. **runtime-prod** stage: Production-ready image
 
+## Supported Platforms
+
+This image is built for multiple architectures:
+
+- **linux/amd64** - Intel/AMD 64-bit processors
+- **linux/arm64** - ARM 64-bit processors (Apple Silicon, AWS Graviton, etc.)
+
+Docker will automatically pull the correct image for your platform.
+
 ## CI/CD
 
 Automated builds are configured via GitHub Actions:
 
 - **Triggers**: Push to tags (v*.*.*) or manual workflow dispatch
-- **Platform**: linux/amd64
+- **Platforms**: linux/amd64, linux/arm64
 - **Registry**: registry.nimahosts.com
 - **Features**:
   - Automated versioning
