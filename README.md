@@ -59,7 +59,7 @@ The image includes custom configurations for optimal WordPress performance:
 ### Pull from Registry
 
 ```bash
-docker pull registry.nimahosts.com/nimasystems/wordpress-max:latest
+docker pull registry.nimahosts.com/nimasystems-public/wordpress-max:latest
 ```
 
 ### Run Container
@@ -72,7 +72,7 @@ docker run -d \
   -e WORDPRESS_DB_USER=wordpress \
   -e WORDPRESS_DB_PASSWORD=your_password \
   -e WORDPRESS_DB_NAME=wordpress \
-  registry.nimahosts.com/nimasystems/wordpress-max:latest
+  registry.nimahosts.com/nimasystems-public/wordpress-max:latest
 ```
 
 ### Docker Compose Example
@@ -82,7 +82,7 @@ version: '3.8'
 
 services:
   wordpress:
-    image: registry.nimahosts.com/nimasystems/wordpress-max:latest
+    image: registry.nimahosts.com/nimasystems-public/wordpress-max:latest
     ports:
       - "80:80"
     environment:
