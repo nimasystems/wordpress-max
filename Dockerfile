@@ -144,3 +144,5 @@ WORKDIR /var/www/html
 RUN chown -R app:app /var/www/html
 
 USER $UID:$GID
+
+FROM runtime AS runtime-prod
