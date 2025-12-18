@@ -72,6 +72,50 @@ jobs:
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
+      - name: Send Slack Notification
+        if: ${{ env.ACT != 'true' && success() }}
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            channel: notifications
+            status: "${{ job.status }}"
+            text: "*✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.*\n
+            *Status:* ${{ job.status }}\n
+            *Version:* ${{ env.final_version }}\n
+            *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.\n
+                  *Status:* ${{ job.status }}\n
+                  *Version:* ${{ env.final_version }}\n
+                  *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+
+      - name: Send Slack Notification
+        if: ${{ env.ACT != 'true' && failure() }}
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            channel: notifications
+            status: "${{ job.status }}"
+            text: "*❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.*\n
+            *Status:* ${{ job.status }}\n
+            *Version which failed:* ${{ env.final_version }}\n
+            *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.\n
+                  *Status:* ${{ job.status }}\n
+                  *Version which failed:* ${{ env.final_version }}\n
+                  *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
+
   create-release:
     needs: [ build-wp ]
     runs-on: ubuntu-latest
@@ -135,47 +179,3 @@ jobs:
 
             ---
             *🤖 Auto-generated release from [GitHub Actions](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*
-
-      - name: Send Slack Notification
-        if: ${{ env.ACT != 'true' && success() }}
-        uses: slackapi/slack-github-action@v2.0.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            channel: notifications
-            status: "${{ job.status }}"
-            text: "*✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.*\n
-            *Status:* ${{ job.status }}\n
-            *Version:* ${{ env.final_version }}\n
-            *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
-            blocks:
-              - type: "section"
-                text:
-                  type: "mrkdwn"
-                  text: "✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.\n
-                  *Status:* ${{ job.status }}\n
-                  *Version:* ${{ env.final_version }}\n
-                  *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
-
-      - name: Send Slack Notification
-        if: ${{ env.ACT != 'true' && failure() }}
-        uses: slackapi/slack-github-action@v2.0.0
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            channel: notifications
-            status: "${{ job.status }}"
-            text: "*❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.*\n
-            *Status:* ${{ job.status }}\n
-            *Version which failed:* ${{ env.final_version }}\n
-            *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
-            blocks:
-              - type: "section"
-                text:
-                  type: "mrkdwn"
-                  text: "❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.\n
-                  *Status:* ${{ job.status }}\n
-                  *Version which failed:* ${{ env.final_version }}\n
-                  *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
