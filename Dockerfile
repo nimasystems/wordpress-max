@@ -63,8 +63,8 @@ ARG UID
 ARG GID
 ARG LIBCURL_VERSION
 
-ENV APACHE_RUN_USER=$UID
-ENV APACHE_RUN_GROUP=$GID
+ENV APACHE_RUN_USER=app
+ENV APACHE_RUN_GROUP=app
 
 LABEL maintainer="Martin Kovachev <miracle@nimasystems.com>"
 
