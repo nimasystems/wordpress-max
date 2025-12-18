@@ -63,8 +63,7 @@ jobs:
           tags: |
             registry.nimahosts.com/nimasystems-public/wordpress-max:${{ needs.set-version.outputs.version }}
 
-      - name: Push latest tag (if selected)
-        if: inputs.latest == 'true'
+      - name: Push latest tag
         run: |
           docker tag registry.nimahosts.com/nimasystems-public/wordpress-max:${{ needs.set-version.outputs.version }} registry.nimahosts.com/nimasystems-public/wordpress-max:latest
           docker push registry.nimahosts.com/nimasystems-public/wordpress-max:latest
