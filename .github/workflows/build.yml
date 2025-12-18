@@ -76,7 +76,7 @@ jobs:
           payload: |
             channel: notifications
             status: "${{ job.status }}"
-            text: "*✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.*\n
+            text: "*✅ Deployment of Wordpress-MAX (${{ needs.set-version.outputs.version }}) completed successfully.*\n
             *Status:* ${{ job.status }}\n
             *Version:* ${{ env.final_version }}\n
             *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
@@ -84,7 +84,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "✅ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) completed successfully.\n
+                  text: "✅ Deployment of Wordpress-MAX (${{ needs.set-version.outputs.version }}) completed successfully.\n
                   *Status:* ${{ job.status }}\n
                   *Version:* ${{ env.final_version }}\n
                   *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
@@ -98,7 +98,7 @@ jobs:
           payload: |
             channel: notifications
             status: "${{ job.status }}"
-            text: "*❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.*\n
+            text: "*❌ Deployment of Wordpress-MAX (${{ needs.set-version.outputs.version }}) DID NOT complete successfully.*\n
             *Status:* ${{ job.status }}\n
             *Version which failed:* ${{ env.final_version }}\n
             *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
@@ -106,7 +106,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "❌ Deployment of Wordpress-MAX (${{ github.event.inputs.environment }}) DID NOT complete successfully.\n
+                  text: "❌ Deployment of Wordpress-MAX (${{ needs.set-version.outputs.version }}) DID NOT complete successfully.\n
                   *Status:* ${{ job.status }}\n
                   *Version which failed:* ${{ env.final_version }}\n
                   *Build URL:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Build>"
